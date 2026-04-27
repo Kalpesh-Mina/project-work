@@ -1,10 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Trophy, Target, Heart, Zap, Award, Clock, CheckCircle, AlertCircle, ChevronRight, TrendingUp } from 'lucide-react'
 import { formatDate, getMonthName } from '@/lib/utils'
 import type { Profile, Subscription, Score, DrawResult } from '@/types'
+import toast from 'react-hot-toast'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fadeUp: any = {
@@ -33,6 +35,28 @@ interface Props {
 export default function DashboardOverviewClient({ profile, subscription, scores, results }: Props) {
   const isActive = subscription?.status === 'active'
   const totalWon = results.filter(r => r.payment_status === 'paid').reduce((s, r) => s + r.prize_amount, 0)
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+
+  const handleSubscribe = async () => {
+    setCheckoutLoading(true)
+    try {
+      const res = await fetch('/api/subscriptions/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: 'monthly', charityId: '', charityPercentage: 10 }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        toast.error(data.error || 'Could not start checkout')
+      }
+    } catch {
+      toast.error('Network error. Please try again.')
+    } finally {
+      setCheckoutLoading(false)
+    }
+  }
 
   const stats = [
     {
@@ -87,7 +111,14 @@ export default function DashboardOverviewClient({ profile, subscription, scores,
             <p style={{ fontWeight: 600, fontSize: '0.9rem', color: '#fb7185' }}>No active subscription</p>
             <p style={{ color: 'var(--foreground-muted)', fontSize: '0.8rem' }}>Subscribe to enter monthly draws and support your chosen charity.</p>
           </div>
-          <Link href="/signup" className="btn-primary" style={{ textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Subscribe Now</Link>
+          <button
+            onClick={handleSubscribe}
+            disabled={checkoutLoading}
+            className="btn-primary"
+            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap', opacity: checkoutLoading ? 0.7 : 1 }}
+          >
+            {checkoutLoading ? 'Loading…' : 'Subscribe Now'}
+          </button>
         </motion.div>
       )}
 
