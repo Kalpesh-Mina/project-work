@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import WinningsClient from './WinningsClient'
 
+export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Winnings | Golf & Give' }
 
 export default async function WinningsPage() {

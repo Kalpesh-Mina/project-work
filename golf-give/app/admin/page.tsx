@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import AdminOverviewClient from './AdminOverviewClient'
 
+export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin Dashboard | Golf & Give' }
 
 export default async function AdminPage() {

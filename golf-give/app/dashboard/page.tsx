@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import DashboardOverviewClient from './DashboardOverviewClient'
 
+export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Dashboard | Golf & Give' }
 
 export default async function DashboardPage() {

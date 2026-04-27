@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import DrawsClient from './DrawsClient'
 
+export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Draws | Golf & Give' }
 
 export default async function DrawsPage() {
