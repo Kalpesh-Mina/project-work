@@ -354,3 +354,58 @@ h1, h2, h3, h4, h5, h6 {
   .section { padding: 3rem 0; }
   .container { padding: 0 1rem; }
 }
+
+/* ── Mobile responsive layout helpers ── */
+/* Hero grid: 2-col on desktop, 1-col on mobile */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3rem;
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero-side-card { display: none; }
+}
+
+/* 2-col grid that stacks on mobile */
+.grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+@media (max-width: 768px) {
+  .grid-2col { grid-template-columns: 1fr; gap: 2rem; }
+}
+
+/* Navbar: show mobile button, hide desktop nav on small screens */
+@media (max-width: 768px) {
+  .nav-desktop { display: none !important; }
+  #mobile-menu-btn { display: flex !important; }
+  .nav-right-desktop { display: none !important; }
+}
+@media (min-width: 769px) {
+  .nav-desktop { display: flex !important; }
+  #mobile-menu-btn { display: none !important; }
+  .nav-right-desktop { display: flex !important; }
+}
+
+/* Performance: reduce blur on glass elements */
+.glass {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Performance: reduce continuous animations on mobile */
+@media (max-width: 768px) {
+  .animate-float { animation: none; }
+  .animate-pulse-glow { animation: none; }
+}
+
+/* Performance: hint browser about animated elements */
+.glass-card { will-change: border-color, box-shadow; }
+.btn-primary { will-change: transform; }
+.stat-card { will-change: transform, box-shadow; }

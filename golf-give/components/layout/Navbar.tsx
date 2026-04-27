@@ -87,7 +87,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+          <div className="nav-desktop" style={{ alignItems: 'center', gap: '2rem' }}>
             {navLinks.map(link => (
               <Link
                 key={link.href}
@@ -105,7 +105,7 @@ export default function Navbar() {
           </div>
 
           {/* Right side */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="nav-right-desktop" style={{ alignItems: 'center', gap: '0.75rem' }}>
             {user ? (
               <div style={{ position: 'relative' }}>
                 <button

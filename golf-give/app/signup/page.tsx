@@ -26,6 +26,8 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+
+    // 1. Create account
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -36,9 +38,36 @@ export default function SignupPage() {
       setLoading(false)
       return
     }
-    toast.success('Account created! Redirecting to dashboard…')
-    router.push('/dashboard')
-    router.refresh()
+
+    // 2. Sign in to ensure session is active before calling API
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+    if (signInError) {
+      toast.error('Account created but sign-in failed. Please log in manually.')
+      router.push('/login')
+      return
+    }
+
+    // 3. Create Stripe checkout session
+    toast.success('Account created! Redirecting to payment…')
+    try {
+      const res = await fetch('/api/subscriptions/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, charityId: '', charityPercentage: 10 }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        toast.error(data.error || 'Could not start checkout. Please try from your dashboard.')
+        router.push('/dashboard')
+      }
+    } catch {
+      toast.error('Network error. Please try subscribing from your dashboard.')
+      router.push('/dashboard')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

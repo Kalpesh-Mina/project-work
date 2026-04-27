@@ -53,7 +53,7 @@ export default function HomePage() {
         }} />
 
         <div className="container" style={{ paddingTop: '120px', paddingBottom: '80px', position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '3rem', alignItems: 'center' }}>
+        <div className="hero-grid">
             <div>
               <motion.div
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
@@ -108,7 +108,7 @@ export default function HomePage() {
             {/* Hero Visual */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, duration: 0.8 }}
-              className="hidden lg:block animate-float"
+              className="hidden lg:block animate-float hero-side-card"
               style={{ flexShrink: 0 }}
             >
               <div className="glass-card animate-pulse-glow" style={{ padding: '2rem', width: '320px' }}>
@@ -256,7 +256,7 @@ export default function HomePage() {
       {/* ── CHARITY ── */}
       <section className="section">
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'center' }}>
+          <div className="grid-2col">
             <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
               <span className="badge badge-success" style={{ marginBottom: '1rem', display: 'inline-flex' }}>
                 <Heart size={12} style={{ marginRight: '0.35rem' }} /> Charitable Impact
