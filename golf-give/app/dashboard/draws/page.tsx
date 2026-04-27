@@ -18,7 +18,7 @@ export default async function DrawsPage() {
   return (
     <DrawsClient
       draws={drawsRes.data || []}
-      userEntries={(entriesRes.data || []).map(e => e.draw_id)}
+      userEntries={(entriesRes.data || []).map((e: { draw_id: string }) => e.draw_id)}
       results={resultsRes.data || []}
     />
   )

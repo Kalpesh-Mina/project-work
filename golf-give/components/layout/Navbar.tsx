@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import type { User as SupabaseUser, Session } from '@supabase/supabase-js'
 import { Menu, X, Trophy, Heart, ChevronDown, LogOut, User, LayoutDashboard, Shield } from 'lucide-react'
 
 export default function Navbar() {
@@ -23,13 +24,14 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!supabase) return
-    supabase.auth.getUser().then(async ({ data: { user: u } }) => {
+    supabase.auth.getUser().then(async (res: { data: { user: SupabaseUser | null } }) => {
+      const u = res.data.user
       if (u) {
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', u.id).single()
         setUser({ email: u.email!, role: profile?.role })
       }
     })
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
       if (session?.user) {
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
         setUser({ email: session.user.email!, role: profile?.role })

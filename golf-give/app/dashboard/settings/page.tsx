@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { motion } from 'framer-motion'
 import { Settings, User, Bell, Save, Key } from 'lucide-react'
 import toast from 'react-hot-toast'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 export default function SettingsPage() {
   const [name, setName] = useState('')
@@ -15,7 +16,8 @@ export default function SettingsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
+    supabase.auth.getUser().then(async (res: { data: { user: SupabaseUser | null } }) => {
+      const user = res.data.user
       if (!user) return
       const { data } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
       setName(data?.full_name || '')

@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     let periodEnd: string | null = null
     let periodStart: string | null = null
     if (stripeSubId) {
-      const sub = await stripe.subscriptions.retrieve(stripeSubId)
+      const sub = await stripe.subscriptions.retrieve(stripeSubId) as unknown as { current_period_start: number; current_period_end: number }
       periodStart = new Date(sub.current_period_start * 1000).toISOString()
       periodEnd = new Date(sub.current_period_end * 1000).toISOString()
     }

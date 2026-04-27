@@ -7,6 +7,7 @@ import { Target, Plus, Edit2, Trash2, Save, X, Info } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import type { Score } from '@/types'
+import type { User } from '@supabase/supabase-js'
 
 export default function ScoresPage() {
   const [scores, setScores] = useState<Score[]>([])
@@ -20,7 +21,8 @@ export default function ScoresPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then((res: { data: { user: User | null } }) => {
+      const user = res.data.user
       if (user) { setUserId(user.id); fetchScores(user.id) }
     })
   }, [])

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
   // Fetch all active subscribers' scores
   const { data: activeSubs } = await supabase.from('subscriptions').select('user_id').eq('status', 'active')
-  const userIds = (activeSubs || []).map(s => s.user_id)
+  const userIds = (activeSubs || []).map((s: { user_id: string }) => s.user_id)
 
   const { data: scores } = await supabase.from('scores').select('user_id, score, score_date').in('user_id', userIds)
 
