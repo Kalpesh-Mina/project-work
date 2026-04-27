@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import WinningsClient from './WinningsClient'
 
@@ -10,7 +10,8 @@ export default async function WinningsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: results } = await supabase
+  const adminSupabase = await createAdminClient()
+  const { data: results } = await adminSupabase
     .from('draw_results')
     .select('*, draws(month, year), winner_verifications(*)')
     .eq('user_id', user.id)

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import DrawsClient from './DrawsClient'
 
@@ -10,10 +10,11 @@ export default async function DrawsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const adminSupabase = await createAdminClient()
   const [drawsRes, entriesRes, resultsRes] = await Promise.all([
-    supabase.from('draws').select('*, prize_pools(*)').in('status', ['published', 'completed']).order('year', { ascending: false }).order('month', { ascending: false }),
-    supabase.from('draw_entries').select('draw_id').eq('user_id', user.id),
-    supabase.from('draw_results').select('*, draws(month, year)').eq('user_id', user.id).order('created_at', { ascending: false }),
+    adminSupabase.from('draws').select('*, prize_pools(*)').in('status', ['published', 'completed']).order('year', { ascending: false }).order('month', { ascending: false }),
+    adminSupabase.from('draw_entries').select('draw_id').eq('user_id', user.id),
+    adminSupabase.from('draw_results').select('*, draws(month, year)').eq('user_id', user.id).order('created_at', { ascending: false }),
   ])
 
   return (
