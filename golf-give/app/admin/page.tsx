@@ -20,7 +20,7 @@ export default async function AdminPage() {
     supabase.from('draw_results').select('prize_amount, payment_status'),
   ])
 
-  const totalPrizePool = (resultsRes.data || []).reduce((s, r) => s + r.prize_amount, 0)
+  const totalPrizePool = (resultsRes.data || []).reduce((s: number, r: { prize_amount: number; payment_status: string }) => s + r.prize_amount, 0)
   const pendingVerifications = await supabase.from('winner_verifications').select('id', { count: 'exact' }).eq('status', 'pending')
 
   return (

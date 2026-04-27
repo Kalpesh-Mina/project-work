@@ -8,7 +8,8 @@ import { getMonthName, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import type { DrawResult, WinnerVerification } from '@/types'
 
-const fadeUp = { hidden: { opacity: 0, y: 16 }, visible: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.08, duration: 0.5 } }) }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const fadeUp: any = { hidden: { opacity: 0, y: 16 }, visible: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.08, duration: 0.5 } }) }
 
 interface Props {
   results: (DrawResult & { draws?: { month: number; year: number } | null; winner_verifications?: WinnerVerification[] })[]

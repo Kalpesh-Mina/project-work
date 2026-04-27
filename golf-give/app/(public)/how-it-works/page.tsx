@@ -4,7 +4,8 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Shield, Target, Zap, Trophy, Heart, CheckCircle, ArrowRight, ChevronDown } from 'lucide-react'
 
-const fadeUp = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const fadeUp: any = {
   hidden: { opacity: 0, y: 24 },
   visible: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.6 } }),
 }

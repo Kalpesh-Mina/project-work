@@ -6,7 +6,8 @@ import { motion } from 'framer-motion'
 import { Heart, Search, Star, Calendar, MapPin, ExternalLink, ChevronRight } from 'lucide-react'
 import type { Charity } from '@/types'
 
-const fadeUp = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const fadeUp: any = {
   hidden: { opacity: 0, y: 20 },
   visible: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.07, duration: 0.5 } }),
 }

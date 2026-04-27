@@ -19,7 +19,7 @@ export default async function AdminReportsPage() {
     supabase.from('subscriptions').select('charity_percentage').eq('status', 'active'),
   ])
 
-  const totalCharityDonated = (charityRes.data || []).reduce((s, sub) => {
+  const totalCharityDonated = (charityRes.data || []).reduce((s: number, sub: { charity_percentage: number }) => {
     const monthlyFee = 1999 // base monthly pence
     return s + (monthlyFee * (sub.charity_percentage / 100)) / 100
   }, 0)

@@ -6,7 +6,8 @@ import { Trophy, Target, Heart, Zap, Award, Clock, CheckCircle, AlertCircle, Che
 import { formatDate, getMonthName } from '@/lib/utils'
 import type { Profile, Subscription, Score, DrawResult } from '@/types'
 
-const fadeUp = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const fadeUp: any = {
   hidden: { opacity: 0, y: 16 },
   visible: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.08, duration: 0.5 } }),
 }
