@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 const isConfigured = () => {
@@ -20,6 +21,7 @@ function createMockClient() {
     order: () => mockQuery,
     limit: () => mockQuery,
     single: () => Promise.resolve(empty),
+    maybeSingle: () => Promise.resolve(empty),
     then: (cb: any) => Promise.resolve(emptyArray).then(cb),
   }
   return {
@@ -53,22 +55,16 @@ export async function createClient() {
   )
 }
 
+// Plain service-role client — fully bypasses RLS, no cookie/session interference
 export async function createAdminClient() {
   if (!isConfigured()) return createMockClient()
-  const cookieStore = await cookies()
-  return createServerClient(
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {}
-        },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
       },
     }
   )
