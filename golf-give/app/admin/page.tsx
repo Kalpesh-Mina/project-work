@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import AdminOverviewClient from './AdminOverviewClient'
 
@@ -6,23 +6,27 @@ export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin Dashboard | Golf & Give' }
 
 export default async function AdminPage() {
+  // Use regular client just to get the current user session
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  // Use admin client (service role) to bypass RLS for all admin queries
+  const adminSupabase = await createAdminClient()
+
+  const { data: profile } = await adminSupabase.from('profiles').select('role').eq('id', user.id).single()
   if (!profile || profile.role !== 'admin') redirect('/dashboard')
 
   const [usersRes, subsRes, drawsRes, charitiesRes, resultsRes] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact' }),
-    supabase.from('subscriptions').select('id, status', { count: 'exact' }).eq('status', 'active'),
-    supabase.from('draws').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(5),
-    supabase.from('charities').select('id', { count: 'exact' }).eq('is_active', true),
-    supabase.from('draw_results').select('prize_amount, payment_status'),
+    adminSupabase.from('profiles').select('id', { count: 'exact' }),
+    adminSupabase.from('subscriptions').select('id, status', { count: 'exact' }).eq('status', 'active'),
+    adminSupabase.from('draws').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(5),
+    adminSupabase.from('charities').select('id', { count: 'exact' }).eq('is_active', true),
+    adminSupabase.from('draw_results').select('prize_amount, payment_status'),
   ])
 
   const totalPrizePool = (resultsRes.data || []).reduce((s: number, r: { prize_amount: number; payment_status: string }) => s + r.prize_amount, 0)
-  const pendingVerifications = await supabase.from('winner_verifications').select('id', { count: 'exact' }).eq('status', 'pending')
+  const pendingVerifications = await adminSupabase.from('winner_verifications').select('id', { count: 'exact' }).eq('status', 'pending')
 
   return (
     <AdminOverviewClient
