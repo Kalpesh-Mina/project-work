@@ -16,7 +16,7 @@ export default async function DashboardPage() {
 
   const [profileRes, subRes, scoresRes, resultsRes] = await Promise.all([
     adminSupabase.from('profiles').select('*').eq('id', user.id).single(),
-    adminSupabase.from('subscriptions').select('*, charities(name)').eq('user_id', user.id).single(),
+    adminSupabase.from('subscriptions').select('*, charities(name)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     adminSupabase.from('scores').select('*').eq('user_id', user.id).order('score_date', { ascending: false }).limit(5),
     adminSupabase.from('draw_results').select('*, draws(month, year)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
   ])
