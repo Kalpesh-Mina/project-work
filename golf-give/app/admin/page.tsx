@@ -1,21 +1,12 @@
-import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { createAdminClient } from '@/lib/supabase/server'
 import AdminOverviewClient from './AdminOverviewClient'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Admin Dashboard | Golf & Give' }
 
 export default async function AdminPage() {
-  // Use regular client just to get the current user session
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
   // Use admin client (service role) to bypass RLS for all admin queries
   const adminSupabase = await createAdminClient()
-
-  const { data: profile } = await adminSupabase.from('profiles').select('role').eq('id', user.id).single()
-  if (!profile || profile.role !== 'admin') redirect('/dashboard')
 
   const [usersRes, subsRes, drawsRes, charitiesRes, resultsRes] = await Promise.all([
     adminSupabase.from('profiles').select('id', { count: 'exact' }),

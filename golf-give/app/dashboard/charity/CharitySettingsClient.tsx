@@ -44,15 +44,16 @@ export default function CharitySettingsClient({ subscription, charities, userId 
         <p style={{ color: 'var(--foreground-muted)', fontSize: '0.95rem' }}>Choose which charity receives a portion of your subscription every month.</p>
       </motion.div>
 
-      {!subscription ? (
-        <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--foreground-muted)' }}>
-          <Heart size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-          <p>You need an active subscription to configure charity donations.</p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Contribution slider */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', alignItems: 'start' }} className="lg:grid-cols-[2fr_1fr]">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {!subscription && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--foreground-muted)' }}>
+              <Heart size={32} style={{ opacity: 0.3, marginBottom: '1rem', display: 'inline-block' }} />
+              <p>You need an active subscription to configure charity donations.</p>
+            </motion.div>
+          )}
+
+          {subscription && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="glass-card" style={{ padding: '1.5rem' }}>
               <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem' }}>Contribution Percentage</h2>
               <div style={{ marginBottom: '1rem' }}>
@@ -77,55 +78,57 @@ export default function CharitySettingsClient({ subscription, charities, userId 
                 <span style={{ fontFamily: 'var(--font-outfit)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-light)' }}>£{charityAmount.toFixed(2)}</span>
               </div>
             </motion.div>
+          )}
 
-            {/* Charity selection */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="glass-card" style={{ padding: '1.5rem' }}>
-              <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem' }}>Select a Charity</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {charities.map(charity => (
-                  <button
-                    key={charity.id}
-                    id={`charity-select-${charity.id}`}
-                    onClick={() => setSelectedCharity(charity.id)}
-                    style={{
-                      background: selectedCharity === charity.id ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.02)',
-                      border: selectedCharity === charity.id ? '2px solid var(--accent)' : '2px solid var(--border)',
-                      borderRadius: '12px', padding: '1rem 1.25rem', cursor: 'pointer', textAlign: 'left',
-                      transition: 'all 0.2s', color: 'var(--foreground)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div style={{
-                        width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
-                        background: selectedCharity === charity.id ? 'rgba(16,185,129,0.2)' : 'rgba(99,102,241,0.1)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                      }}>
-                        <Heart size={18} style={{ color: selectedCharity === charity.id ? 'var(--accent-light)' : 'var(--primary-light)' }} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{charity.name}</span>
-                          {charity.is_featured && <Star size={13} style={{ color: 'var(--gold-light)' }} />}
-                        </div>
-                        <p style={{ color: 'var(--foreground-muted)', fontSize: '0.8rem', marginTop: '0.15rem', lineHeight: 1.4 }}>{charity.description?.slice(0, 80)}…</p>
-                      </div>
-                      {selectedCharity === charity.id && (
-                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <span style={{ color: 'white', fontSize: '0.7rem', fontWeight: 700 }}>✓</span>
-                        </div>
-                      )}
+          {/* Charity selection - Always visible */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="glass-card" style={{ padding: '1.5rem' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem' }}>Select a Charity</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {charities.map(charity => (
+                <button
+                  key={charity.id}
+                  id={`charity-select-${charity.id}`}
+                  onClick={() => { if (subscription) setSelectedCharity(charity.id) }}
+                  style={{
+                    background: selectedCharity === charity.id ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.02)',
+                    border: selectedCharity === charity.id ? '2px solid var(--accent)' : '2px solid var(--border)',
+                    borderRadius: '12px', padding: '1rem 1.25rem', cursor: subscription ? 'pointer' : 'default', textAlign: 'left',
+                    transition: 'all 0.2s', color: 'var(--foreground)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
+                      background: selectedCharity === charity.id ? 'rgba(16,185,129,0.2)' : 'rgba(99,102,241,0.1)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      <Heart size={18} style={{ color: selectedCharity === charity.id ? 'var(--accent-light)' : 'var(--primary-light)' }} />
                     </div>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{charity.name}</span>
+                        {charity.is_featured && <Star size={13} style={{ color: 'var(--gold-light)' }} />}
+                      </div>
+                      <p style={{ color: 'var(--foreground-muted)', fontSize: '0.8rem', marginTop: '0.15rem', lineHeight: 1.4 }}>{charity.description?.slice(0, 80)}…</p>
+                    </div>
+                    {selectedCharity === charity.id && (
+                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <span style={{ color: 'white', fontSize: '0.7rem', fontWeight: 700 }}>✓</span>
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
 
-            <button id="charity-save" onClick={handleSave} disabled={saving} className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem', fontSize: '1rem', opacity: saving ? 0.7 : 1 }}>
-              <Save size={17} /> {saving ? 'Saving…' : 'Save Preferences'}
-            </button>
-          </div>
+          <button id="charity-save" onClick={handleSave} disabled={saving || !subscription} className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem', fontSize: '1rem', opacity: (saving || !subscription) ? 0.7 : 1 }}>
+            <Save size={17} /> {saving ? 'Saving…' : 'Save Preferences'}
+          </button>
+        </div>
 
-          {/* Current summary */}
+        {/* Current summary - Only visible if subscribed */}
+        {subscription && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="glass-card" style={{ padding: '1.5rem' }}>
               <h3 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--foreground-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Settings</h3>
@@ -142,8 +145,8 @@ export default function CharitySettingsClient({ subscription, charities, userId 
               ))}
             </div>
           </motion.div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

@@ -4,9 +4,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function proxy(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
   const { pathname } = request.nextUrl
 
-  // If Supabase isn't configured, allow all routes through (dev mode)
+  // Not configured — let everything through (local dev without .env)
   if (!supabaseUrl.startsWith('http')) {
     return NextResponse.next({ request })
   }
@@ -33,22 +34,29 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Protect admin routes — use service role key so RLS doesn't block the lookup
+  // Protect admin routes
   if (pathname.startsWith('/admin')) {
     if (!user) return NextResponse.redirect(new URL('/login', request.url))
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-    const adminClient = createServerClient(supabaseUrl, serviceKey, {
-      cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll() {},
-      },
-    })
-    const { data: profile } = await adminClient
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    if (!profile || profile.role !== 'admin') {
+
+    // Direct REST fetch with service role key — bypasses RLS with no cookie interference
+    try {
+      const profileRes = await fetch(
+        `${supabaseUrl}/rest/v1/profiles?id=eq.${user.id}&select=role&limit=1`,
+        {
+          headers: {
+            apikey: serviceKey,
+            Authorization: `Bearer ${serviceKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      const rows: { role: string }[] = await profileRes.json()
+
+      if (!rows[0] || rows[0].role !== 'admin') {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+    } catch {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
