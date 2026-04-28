@@ -45,8 +45,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     if (!supabase) return
     await supabase.auth.signOut()
-    router.push('/')
-    router.refresh()
+    window.location.href = '/'
   }
 
   const navLinks = [
