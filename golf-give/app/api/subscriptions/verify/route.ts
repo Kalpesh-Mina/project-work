@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 
@@ -6,12 +7,11 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
  * POST /api/subscriptions/verify
  *
  * Called client-side when the user lands on /dashboard?subscribed=true
- * after completing Stripe checkout. Since the webhook secret is not
- * configured (local dev) or webhooks may be delayed, this route
- * directly asks Stripe "does this customer have an active subscription?"
- * and writes the result into our database.
+ * after completing Stripe checkout. Since the webhook secret may not be
+ * configured in local dev, this route directly polls Stripe for the
+ * user's active subscription and writes it to the database.
  */
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   // 1. Verify the caller is a logged-in user
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -19,16 +19,16 @@ export async function POST(req: NextRequest) {
 
   const adminSupabase = await createAdminClient()
 
-  // 2. Find this user's Stripe customer ID from our DB (if it exists already)
+  // 2. Find this user's Stripe customer ID from our DB
   const { data: existingSub } = await adminSupabase
     .from('subscriptions')
     .select('id, stripe_customer_id, status')
     .eq('user_id', user.id)
     .maybeSingle()
 
-  let customerId = existingSub?.stripe_customer_id
+  let customerId: string | null = existingSub?.stripe_customer_id ?? null
 
-  // 3. If no customer ID in DB, look them up in Stripe by email
+  // 3. If no customer ID in DB yet, look them up in Stripe by email
   if (!customerId) {
     const { data: profile } = await adminSupabase
       .from('profiles')
@@ -47,34 +47,50 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ found: false, message: 'No Stripe customer found for this account' })
   }
 
-  // 4. Fetch all active subscriptions for this customer from Stripe
-  const stripeSubs = await stripe.subscriptions.list({
+  // 4. Fetch active subscriptions from Stripe (no expand — keep types clean)
+  let stripeSub: Stripe.Subscription | null = null
+
+  const activeSubs = await stripe.subscriptions.list({
     customer: customerId,
     status: 'active',
     limit: 1,
-    expand: ['data.items.data.price'],
   })
 
-  if (stripeSubs.data.length === 0) {
-    // Also check for trialing
-    const trialingSubs = await stripe.subscriptions.list({
+  if (activeSubs.data.length > 0) {
+    stripeSub = activeSubs.data[0]
+  } else {
+    // Also check trialing
+    const trialSubs = await stripe.subscriptions.list({
       customer: customerId,
       status: 'trialing',
       limit: 1,
     })
-    if (trialingSubs.data.length === 0) {
-      return NextResponse.json({ found: false, message: 'No active Stripe subscription found' })
+    if (trialSubs.data.length > 0) {
+      stripeSub = trialSubs.data[0]
     }
   }
 
-  const stripeSub = stripeSubs.data[0] || (await stripe.subscriptions.list({ customer: customerId, status: 'trialing', limit: 1 })).data[0]
+  if (!stripeSub) {
+    return NextResponse.json({ found: false, message: 'No active Stripe subscription found' })
+  }
+
+  // The newer Stripe API version (2026-04-22.dahlia) moved period timestamps in its
+  // TypeScript definitions, but they still exist at runtime on the object.
+  // Cast through a typed interface to access them safely.
+  interface StripePeriod {
+    id: string
+    current_period_start: number
+    current_period_end: number
+    items: { data: Array<{ price: { id: string } }> }
+  }
+  const sub = stripeSub as unknown as StripePeriod
 
   // 5. Determine plan from the Stripe price ID
-  const priceId = stripeSub.items.data[0]?.price?.id
-  const plan = priceId === process.env.STRIPE_YEARLY_PRICE_ID ? 'yearly' : 'monthly'
+  const priceId = sub.items.data[0]?.price.id ?? ''
+  const plan: 'yearly' | 'monthly' = priceId === process.env.STRIPE_YEARLY_PRICE_ID ? 'yearly' : 'monthly'
 
-  const periodStart = new Date(stripeSub.current_period_start * 1000).toISOString()
-  const periodEnd = new Date(stripeSub.current_period_end * 1000).toISOString()
+  const periodStart = new Date(sub.current_period_start * 1000).toISOString()
+  const periodEnd = new Date(sub.current_period_end * 1000).toISOString()
 
   // 6. Upsert the subscription in our database
   if (existingSub) {
@@ -100,10 +116,5 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  return NextResponse.json({
-    found: true,
-    plan,
-    status: 'active',
-    periodEnd,
-  })
+  return NextResponse.json({ found: true, plan, status: 'active', periodEnd })
 }
