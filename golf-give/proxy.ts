@@ -33,10 +33,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Protect admin routes
+  // Protect admin routes — use service role key so RLS doesn't block the lookup
   if (pathname.startsWith('/admin')) {
     if (!user) return NextResponse.redirect(new URL('/login', request.url))
-    const { data: profile } = await supabase
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    const adminClient = createServerClient(supabaseUrl, serviceKey, {
+      cookies: {
+        getAll() { return request.cookies.getAll() },
+        setAll() {},
+      },
+    })
+    const { data: profile } = await adminClient
       .from('profiles')
       .select('role')
       .eq('id', user.id)
