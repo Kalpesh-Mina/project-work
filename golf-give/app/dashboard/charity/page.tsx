@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import CharitySettingsClient from './CharitySettingsClient'
 
@@ -9,9 +9,11 @@ export default async function CharitySettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // Use service-role client to bypass RLS for reliable data access
+  const adminSupabase = await createAdminClient()
   const [subRes, charitiesRes] = await Promise.all([
-    supabase.from('subscriptions').select('*, charities(*)').eq('user_id', user.id).single(),
-    supabase.from('charities').select('*').eq('is_active', true).order('is_featured', { ascending: false }),
+    adminSupabase.from('subscriptions').select('*, charities(*)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    adminSupabase.from('charities').select('*').eq('is_active', true).order('is_featured', { ascending: false }),
   ])
 
   return <CharitySettingsClient subscription={subRes.data} charities={charitiesRes.data || []} userId={user.id} />

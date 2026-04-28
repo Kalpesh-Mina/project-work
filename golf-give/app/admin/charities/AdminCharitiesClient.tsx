@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, Plus, Edit2, Trash2, Star, Eye, EyeOff, Save, X } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -15,11 +14,10 @@ export default function AdminCharitiesClient({ charities: initial }: { charities
   const [editing, setEditing] = useState<Charity | null>(null)
   const [form, setForm] = useState<Partial<Charity>>(EMPTY)
   const [saving, setSaving] = useState(false)
-  const supabase = createClient()
 
   const refresh = async () => {
-    const { data } = await supabase.from('charities').select('*').order('created_at', { ascending: false })
-    setCharities(data || [])
+    const res = await fetch('/api/admin/charities')
+    if (res.ok) setCharities(await res.json())
   }
 
   const openCreate = () => { setEditing(null); setForm(EMPTY); setShowForm(true) }
@@ -30,36 +28,36 @@ export default function AdminCharitiesClient({ charities: initial }: { charities
     e.preventDefault()
     if (!form.name?.trim()) { toast.error('Name is required'); return }
     setSaving(true)
-    if (editing) {
-      const { error } = await supabase.from('charities').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editing.id)
-      if (error) { toast.error(error.message); setSaving(false); return }
-      toast.success('Charity updated')
-    } else {
-      const { error } = await supabase.from('charities').insert({ ...form, events: [] })
-      if (error) { toast.error(error.message); setSaving(false); return }
-      toast.success('Charity created')
-    }
+    const method = editing ? 'PATCH' : 'POST'
+    const body = editing ? { ...form, id: editing.id } : form
+    const res = await fetch('/api/admin/charities', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const json = await res.json()
+    if (!res.ok) { toast.error(json.error || 'Failed'); setSaving(false); return }
+    toast.success(editing ? 'Charity updated' : 'Charity created')
     closeForm(); await refresh(); setSaving(false)
   }
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
-    const { error } = await supabase.from('charities').delete().eq('id', id)
-    if (error) { toast.error(error.message); return }
+    const res = await fetch('/api/admin/charities', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    const json = await res.json()
+    if (!res.ok) { toast.error(json.error || 'Failed'); return }
     toast.success('Charity deleted')
     await refresh()
   }
 
   const toggleActive = async (c: Charity) => {
-    const { error } = await supabase.from('charities').update({ is_active: !c.is_active }).eq('id', c.id)
-    if (error) { toast.error(error.message); return }
+    const res = await fetch('/api/admin/charities', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, is_active: !c.is_active }) })
+    const json = await res.json()
+    if (!res.ok) { toast.error(json.error || 'Failed'); return }
     toast.success(`Charity ${!c.is_active ? 'activated' : 'deactivated'}`)
     await refresh()
   }
 
   const toggleFeatured = async (c: Charity) => {
-    const { error } = await supabase.from('charities').update({ is_featured: !c.is_featured }).eq('id', c.id)
-    if (error) { toast.error(error.message); return }
+    const res = await fetch('/api/admin/charities', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, is_featured: !c.is_featured }) })
+    const json = await res.json()
+    if (!res.ok) { toast.error(json.error || 'Failed'); return }
     toast.success(`Charity ${!c.is_featured ? 'featured' : 'unfeatured'}`)
     await refresh()
   }
