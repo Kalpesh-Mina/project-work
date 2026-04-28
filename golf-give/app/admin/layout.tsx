@@ -1,6 +1,6 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import AdminLayoutClient from './AdminLayoutClient'
+import AdminLayoutClient from '@/app/admin/AdminLayoutClient'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Server-side: verify session and admin role

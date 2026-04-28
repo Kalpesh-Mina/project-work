@@ -25,18 +25,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const supabase = createClient()
 
   useEffect(() => {
-    // Fetch user role to conditionally show Admin Panel link
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
-      supabase
+    const checkAdmin = async () => {
+      const { data: authData } = await supabase.auth.getUser()
+      const userId = authData.user?.id
+      if (!userId) return
+      const { data: profile } = await supabase
         .from('profiles')
         .select('role')
-        .eq('id', user.id)
+        .eq('id', userId)
         .single()
-        .then(({ data }) => {
-          if (data?.role === 'admin') setIsAdmin(true)
-        })
-    })
+      if (profile?.role === 'admin') setIsAdmin(true)
+    }
+    checkAdmin()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
