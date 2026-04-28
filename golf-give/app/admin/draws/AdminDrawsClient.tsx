@@ -270,7 +270,7 @@ export default function AdminDrawsClient({ draws, activeSubscriberCount }: Props
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="glass-card" style={{ overflow: 'hidden' }}>
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{ fontSize: '1rem', fontWeight: 700 }}>All Draws ({draws.length})</h2>
-          <span style={{ fontSize: '0.78rem', color: 'var(--foreground-subtle)' }}>Pending/Simulation draws can be deleted</span>
+          <span style={{ fontSize: '0.78rem', color: 'var(--foreground-subtle)' }}>All draws can be deleted</span>
         </div>
         {draws.length === 0 ? (
           <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--foreground-muted)' }}>
@@ -292,7 +292,7 @@ export default function AdminDrawsClient({ draws, activeSubscriberCount }: Props
               </thead>
               <tbody>
                 {draws.map(draw => {
-                  const isDeletable = draw.status !== 'published' && draw.status !== 'completed'
+                  const isDeletable = true // All draws deletable (for testing)
                   return (
                     <tr key={draw.id}>
                       <td style={{ fontWeight: 600 }}>{getMonthName(draw.month)} {draw.year}</td>

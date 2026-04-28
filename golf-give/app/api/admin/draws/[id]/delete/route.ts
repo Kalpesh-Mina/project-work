@@ -25,14 +25,6 @@ export async function DELETE(
     return NextResponse.json({ error: 'Draw not found' }, { status: 404 })
   }
 
-  // Safety guard: don't allow deletion of published/completed draws
-  if (draw.status === 'published' || draw.status === 'completed') {
-    return NextResponse.json(
-      { error: 'Cannot delete a published or completed draw. Winners have already been notified.' },
-      { status: 400 }
-    )
-  }
-
   // Cascade delete in the correct order (FK constraints)
   // 1. draw_results
   await adminSupabase.from('draw_results').delete().eq('draw_id', drawId)
