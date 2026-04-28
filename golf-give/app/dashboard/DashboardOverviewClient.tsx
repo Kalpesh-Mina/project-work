@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -45,35 +45,45 @@ export default function DashboardOverviewClient({ profile, subscription, scores,
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly')
   const router = useRouter()
   const searchParams = useSearchParams()
+  // Guard so the verify call fires exactly once even if the component re-renders
+  const verifiedRef = useRef(false)
 
-  // When redirected back from Stripe with ?subscribed=true:
-  // 1. Call /api/subscriptions/verify → directly polls Stripe and writes to DB
-  // 2. Then do a hard router.refresh() so the server component re-fetches live data
   useEffect(() => {
+    // Only run if the URL has ?subscribed=true AND we haven't already verified
     if (searchParams.get('subscribed') !== 'true') return
+    if (verifiedRef.current) return
+    verifiedRef.current = true
 
     const verifyAndRefresh = async () => {
+      const toastId = toast.loading('Confirming your subscription…')
       try {
-        const toastId = toast.loading('Confirming your subscription…')
         const res = await fetch('/api/subscriptions/verify', { method: 'POST' })
         const data = await res.json()
+
+        // Log to browser console so we can debug exactly what Stripe/DB returned
+        console.log('[verify] response:', data)
 
         if (data.found) {
           toast.success('Subscription activated! Welcome to Golf & Give 🎉', { id: toastId })
         } else {
-          toast.error('Payment received but subscription not yet confirmed — try refreshing in a moment.', { id: toastId })
+          toast.error(`Not confirmed yet: ${data.message || 'unknown'}`, { id: toastId })
         }
-      } catch {
-        toast.error('Could not verify subscription status. Please refresh the page.')
+      } catch (err) {
+        console.error('[verify] error:', err)
+        toast.dismiss(toastId)
+        toast.error('Could not verify subscription. Please refresh the page.')
       } finally {
-        // Always clear the query param and refresh server data
-        router.replace('/dashboard')
-        router.refresh()
+        // Hard reload — guarantees the server component re-reads fresh data from DB
+        // router.refresh() is not reliable enough when the page is force-dynamic
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 2000) // 2 s so the toast is visible before navigating
       }
     }
 
     verifyAndRefresh()
-  }, [searchParams, router])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // empty deps — only runs once on mount
 
   const handleSubscribe = async () => {
     setCheckoutLoading(true)

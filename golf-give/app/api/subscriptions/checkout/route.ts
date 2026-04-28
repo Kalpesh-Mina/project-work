@@ -15,15 +15,38 @@ export async function POST(req: NextRequest) {
   // Use admin client to bypass RLS for reading profile and existing subscription
   const adminSupabase = await createAdminClient()
   const { data: profile } = await adminSupabase.from('profiles').select('email').eq('id', user.id).single()
-  const { data: existingSub } = await adminSupabase.from('subscriptions').select('stripe_customer_id').eq('user_id', user.id).maybeSingle()
+  const { data: existingSub } = await adminSupabase
+    .from('subscriptions')
+    .select('id, stripe_customer_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
 
-  let customerId = existingSub?.stripe_customer_id
+  let customerId = existingSub?.stripe_customer_id ?? null
+
   if (!customerId) {
+    // Create a new Stripe customer
     const customer = await stripe.customers.create({
       email: profile?.email || user.email!,
       metadata: { userId: user.id },
     })
     customerId = customer.id
+
+    // Persist the customer ID immediately so /verify can find it by ID (no email lookup needed)
+    if (existingSub?.id) {
+      await adminSupabase
+        .from('subscriptions')
+        .update({ stripe_customer_id: customerId, updated_at: new Date().toISOString() })
+        .eq('id', existingSub.id)
+    } else {
+      // First time — create a placeholder row with status inactive
+      await adminSupabase.from('subscriptions').insert({
+        user_id: user.id,
+        plan,
+        status: 'inactive',
+        stripe_customer_id: customerId,
+        charity_percentage: Number(charityPercentage) || 10,
+      })
+    }
   }
 
   const session = await stripe.checkout.sessions.create({
