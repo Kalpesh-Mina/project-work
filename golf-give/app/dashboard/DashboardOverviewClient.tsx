@@ -46,15 +46,33 @@ export default function DashboardOverviewClient({ profile, subscription, scores,
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // When redirected back from Stripe with ?subscribed=true, refresh the page
-  // so the server component re-fetches the now-active subscription
+  // When redirected back from Stripe with ?subscribed=true:
+  // 1. Call /api/subscriptions/verify → directly polls Stripe and writes to DB
+  // 2. Then do a hard router.refresh() so the server component re-fetches live data
   useEffect(() => {
-    if (searchParams.get('subscribed') === 'true') {
-      toast.success('Subscription activated! Welcome to Golf & Give 🎉')
-      // Remove the query param and hard-refresh so server component re-fetches
-      router.replace('/dashboard')
-      router.refresh()
+    if (searchParams.get('subscribed') !== 'true') return
+
+    const verifyAndRefresh = async () => {
+      try {
+        const toastId = toast.loading('Confirming your subscription…')
+        const res = await fetch('/api/subscriptions/verify', { method: 'POST' })
+        const data = await res.json()
+
+        if (data.found) {
+          toast.success('Subscription activated! Welcome to Golf & Give 🎉', { id: toastId })
+        } else {
+          toast.error('Payment received but subscription not yet confirmed — try refreshing in a moment.', { id: toastId })
+        }
+      } catch {
+        toast.error('Could not verify subscription status. Please refresh the page.')
+      } finally {
+        // Always clear the query param and refresh server data
+        router.replace('/dashboard')
+        router.refresh()
+      }
     }
+
+    verifyAndRefresh()
   }, [searchParams, router])
 
   const handleSubscribe = async () => {
