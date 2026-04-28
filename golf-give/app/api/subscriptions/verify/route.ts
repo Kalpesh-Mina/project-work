@@ -84,11 +84,13 @@ export async function POST(_req: NextRequest) {
     const plan: 'yearly' | 'monthly' =
       priceId === process.env.STRIPE_YEARLY_PRICE_ID ? 'yearly' : 'monthly'
 
-    // Cast for period timestamps (newer Stripe API version moves these in types)
-    interface StripePeriod { current_period_start: number; current_period_end: number }
-    const subPeriod = stripeSub as unknown as StripePeriod
-    const periodStart = new Date(subPeriod.current_period_start * 1000).toISOString()
-    const periodEnd = new Date(subPeriod.current_period_end * 1000).toISOString()
+    // Safely extract period timestamps — field was removed in Stripe API 2026-04-22.dahlia
+    // Use a loose cast and guard so we never crash if the fields are absent
+    const rawSub = stripeSub as unknown as Record<string, unknown>
+    const startTs = typeof rawSub.current_period_start === 'number' ? rawSub.current_period_start : null
+    const endTs = typeof rawSub.current_period_end === 'number' ? rawSub.current_period_end : null
+    const periodStart = startTs ? new Date(startTs * 1000).toISOString() : null
+    const periodEnd = endTs ? new Date(endTs * 1000).toISOString() : null
 
     // 6. Upsert the subscription in our database
     if (existingSub?.id) {
