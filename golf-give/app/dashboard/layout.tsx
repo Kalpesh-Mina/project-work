@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Trophy, LayoutDashboard, Target, Heart, Zap, Award,
@@ -21,7 +21,24 @@ const NAV_ITEMS = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const supabase = createClient()
+
+  useEffect(() => {
+    // Fetch user role to conditionally show Admin Panel link
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.role === 'admin') setIsAdmin(true)
+        })
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -77,17 +94,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Bottom */}
       <div style={{ padding: '0.75rem', borderTop: '1px solid var(--border-subtle)' }}>
-        <Link href="/admin" style={{
-          display: 'flex', alignItems: 'center', gap: '0.75rem',
-          padding: '0.65rem 0.875rem', borderRadius: '10px', textDecoration: 'none',
-          color: 'var(--gold-light)', fontSize: '0.875rem', marginBottom: '0.25rem',
-          transition: 'background 0.2s'
-        }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245,158,11,0.1)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-        >
-          <Shield size={17} /> Admin Panel
-        </Link>
+        {isAdmin && (
+          <Link href="/admin" style={{
+            display: 'flex', alignItems: 'center', gap: '0.75rem',
+            padding: '0.65rem 0.875rem', borderRadius: '10px', textDecoration: 'none',
+            color: 'var(--gold-light)', fontSize: '0.875rem', marginBottom: '0.25rem',
+            transition: 'background 0.2s'
+          }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245,158,11,0.1)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <Shield size={17} /> Admin Panel
+          </Link>
+        )}
         <button onClick={handleLogout} style={{
           display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
           padding: '0.65rem 0.875rem', borderRadius: '10px', background: 'transparent',
