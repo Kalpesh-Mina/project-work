@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { motion } from 'framer-motion'
 import { Heart, Save, Star, Lock, Trophy, ArrowRight, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -186,7 +185,6 @@ export default function CharitySettingsClient({ subscription, charities, userId 
   const [selectedCharity, setSelectedCharity] = useState(subscription?.selected_charity_id || '')
   const [charityPct, setCharityPct] = useState(subscription?.charity_percentage || 10)
   const [saving, setSaving] = useState(false)
-  const supabase = createClient()
 
   // No subscription → show premium locked gate
   if (!subscription || subscription.status !== 'active') {
@@ -195,14 +193,26 @@ export default function CharitySettingsClient({ subscription, charities, userId 
 
   const handleSave = async () => {
     setSaving(true)
-    const { error } = await supabase.from('subscriptions').update({
-      selected_charity_id: selectedCharity || null,
-      charity_percentage: charityPct,
-      updated_at: new Date().toISOString()
-    }).eq('id', subscription.id)
-    if (error) { toast.error(error.message); setSaving(false); return }
-    toast.success('Charity preferences saved!')
-    setSaving(false)
+    try {
+      const res = await fetch('/api/subscriptions/charity', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          charityId: selectedCharity || null,
+          charityPercentage: charityPct,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to save preferences')
+        return
+      }
+      toast.success('Charity preferences saved!')
+    } catch {
+      toast.error('Network error. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const monthlyFee = subscription.plan === 'yearly' ? 19999 / 12 : 1999
