@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import DashboardOverviewClient from './DashboardOverviewClient'
@@ -22,11 +23,13 @@ export default async function DashboardPage() {
   ])
 
   return (
-    <DashboardOverviewClient
-      profile={profileRes.data}
-      subscription={subRes.data}
-      scores={scoresRes.data || []}
-      results={resultsRes.data || []}
-    />
+    <Suspense fallback={<div style={{ padding: '2rem', color: 'var(--foreground-muted)' }}>Loading…</div>}>
+      <DashboardOverviewClient
+        profile={profileRes.data}
+        subscription={subRes.data}
+        scores={scoresRes.data || []}
+        results={resultsRes.data || []}
+      />
+    </Suspense>
   )
 }

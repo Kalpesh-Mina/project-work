@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Trophy, Target, Heart, Zap, Award, Clock, CheckCircle, AlertCircle, ChevronRight, TrendingUp } from 'lucide-react'
+import { Trophy, Target, Heart, Zap, Award, CheckCircle, AlertCircle, ChevronRight } from 'lucide-react'
 import { formatDate, getMonthName } from '@/lib/utils'
 import type { Profile, Subscription, Score, DrawResult } from '@/types'
 import toast from 'react-hot-toast'
@@ -32,10 +33,29 @@ interface Props {
   results: (DrawResult & { draws?: { month: number; year: number } | null })[]
 }
 
+const PLANS = [
+  { id: 'monthly', label: 'Monthly', price: '£19.99', period: '/month' },
+  { id: 'yearly', label: 'Yearly', price: '£199.99', period: '/year', badge: 'Save 17%' },
+]
+
 export default function DashboardOverviewClient({ profile, subscription, scores, results }: Props) {
   const isActive = subscription?.status === 'active'
   const totalWon = results.filter(r => r.payment_status === 'paid').reduce((s, r) => s + r.prize_amount, 0)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly')
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // When redirected back from Stripe with ?subscribed=true, refresh the page
+  // so the server component re-fetches the now-active subscription
+  useEffect(() => {
+    if (searchParams.get('subscribed') === 'true') {
+      toast.success('Subscription activated! Welcome to Golf & Give 🎉')
+      // Remove the query param and hard-refresh so server component re-fetches
+      router.replace('/dashboard')
+      router.refresh()
+    }
+  }, [searchParams, router])
 
   const handleSubscribe = async () => {
     setCheckoutLoading(true)
@@ -43,7 +63,7 @@ export default function DashboardOverviewClient({ profile, subscription, scores,
       const res = await fetch('/api/subscriptions/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: 'monthly', charityId: '', charityPercentage: 10 }),
+        body: JSON.stringify({ plan: selectedPlan, charityId: '', charityPercentage: 10 }),
       })
       const data = await res.json()
       if (data.url) {
@@ -60,8 +80,9 @@ export default function DashboardOverviewClient({ profile, subscription, scores,
 
   const stats = [
     {
-      icon: CheckCircle, label: 'Subscription', value: subscription ? subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1) : 'None',
-      sub: subscription ? <StatusBadge status={subscription.status} /> : null,
+      icon: CheckCircle, label: 'Subscription',
+      value: subscription ? subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1) : 'None',
+      sub: subscription ? <StatusBadge status={subscription.status} /> : <span style={{ color: 'var(--foreground-subtle)', fontSize: '0.75rem' }}>No active plan</span>,
       color: 'primary'
     },
     { icon: Target, label: 'Scores Entered', value: scores.length, sub: 'of 5 max', color: 'accent' },
@@ -101,28 +122,63 @@ export default function DashboardOverviewClient({ profile, subscription, scores,
         ))}
       </div>
 
-      {/* Subscription alert */}
+      {/* Subscribe banner — shown when NO active subscription */}
       {!isActive && (
-        <motion.div custom={4} variants={fadeUp} initial="hidden" animate="visible"
-          style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}
+        <motion.div
+          custom={4} variants={fadeUp} initial="hidden" animate="visible"
+          className="glass-card"
+          style={{ padding: '1.75rem', marginBottom: '1.5rem', border: '1px solid rgba(99,102,241,0.3)', background: 'rgba(99,102,241,0.06)' }}
         >
-          <AlertCircle size={20} style={{ color: '#fb7185', flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>
-            <p style={{ fontWeight: 600, fontSize: '0.9rem', color: '#fb7185' }}>No active subscription</p>
-            <p style={{ color: 'var(--foreground-muted)', fontSize: '0.8rem' }}>Subscribe to enter monthly draws and support your chosen charity.</p>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1.25rem' }}>
+            <AlertCircle size={20} style={{ color: '#fb7185', flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <p style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>No active subscription</p>
+              <p style={{ color: 'var(--foreground-muted)', fontSize: '0.875rem' }}>
+                Choose a plan below to enter monthly draws and support your chosen charity.
+              </p>
+            </div>
           </div>
+
+          {/* Plan selector */}
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+            {PLANS.map(p => (
+              <button
+                key={p.id}
+                onClick={() => setSelectedPlan(p.id as 'monthly' | 'yearly')}
+                style={{
+                  flex: 1, minWidth: '140px',
+                  background: selectedPlan === p.id ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.03)',
+                  border: selectedPlan === p.id ? '2px solid var(--primary)' : '2px solid var(--border)',
+                  borderRadius: '12px', padding: '0.875rem 1rem', cursor: 'pointer',
+                  textAlign: 'left', color: 'var(--foreground)', transition: 'all 0.2s'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
+                  <span style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '0.9rem' }}>{p.label}</span>
+                  {'badge' in p && p.badge && (
+                    <span className="badge badge-success" style={{ fontSize: '0.6rem' }}>{p.badge}</span>
+                  )}
+                </div>
+                <span style={{ fontFamily: 'var(--font-outfit)', fontSize: '1.2rem', fontWeight: 800 }}>{p.price}</span>
+                <span style={{ color: 'var(--foreground-muted)', fontSize: '0.8rem' }}>{p.period}</span>
+              </button>
+            ))}
+          </div>
+
           <button
+            id="dashboard-subscribe-btn"
             onClick={handleSubscribe}
             disabled={checkoutLoading}
             className="btn-primary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap', opacity: checkoutLoading ? 0.7 : 1 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', opacity: checkoutLoading ? 0.7 : 1 }}
           >
-            {checkoutLoading ? 'Loading…' : 'Subscribe Now'}
+            <Trophy size={16} />
+            {checkoutLoading ? 'Redirecting to payment…' : `Subscribe — ${selectedPlan === 'monthly' ? '£19.99/mo' : '£199.99/yr'}`}
           </button>
         </motion.div>
       )}
 
-      {/* Subscription details */}
+      {/* Subscription details — shown when subscription exists */}
       {subscription && (
         <motion.div custom={4} variants={fadeUp} initial="hidden" animate="visible" className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>

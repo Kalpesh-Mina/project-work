@@ -84,7 +84,7 @@ export default function HomePage() {
                 style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}
               >
                 <Link href="/signup" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.9rem 2rem', fontSize: '1rem' }}>
-                  Start Playing <ArrowRight size={18} />
+                  Create Account <ArrowRight size={18} />
                 </Link>
                 <Link href="/how-it-works" className="btn-secondary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
                   How It Works <ChevronRight size={16} />
@@ -328,18 +328,18 @@ export default function HomePage() {
               Ready to Play, Win, and <span className="gradient-text">Give Back?</span>
             </h2>
             <p style={{ color: 'var(--foreground-muted)', fontSize: '1.1rem', maxWidth: '480px', margin: '0 auto 2.5rem', lineHeight: 1.7 }}>
-              Join thousands of golfers making every round matter. Subscribe today and enter your first monthly draw.
+              Join thousands of golfers making every round matter. Create a free account, then subscribe from your dashboard to enter monthly draws.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'center' }}>
               <Link href="/signup" className="btn-gold" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '1rem 2.5rem', fontSize: '1.1rem' }}>
-                <Trophy size={20} /> Subscribe Now
+                <Trophy size={20} /> Create Free Account
               </Link>
               <Link href="/how-it-works" className="btn-secondary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '1rem 2rem', fontSize: '1.05rem' }}>
                 Learn More
               </Link>
             </div>
             <p style={{ color: 'var(--foreground-subtle)', fontSize: '0.85rem', marginTop: '1.5rem' }}>
-              No long commitments · Cancel anytime · Stripe-secured payments
+              Free to sign up · Subscribe from dashboard · Cancel anytime · Stripe-secured
             </p>
           </motion.div>
         </div>
